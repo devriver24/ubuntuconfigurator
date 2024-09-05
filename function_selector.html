@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .function-list {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .function-item {
+            width: 50%;
+            margin-bottom: 10px;
+        }
+        #selected-code {
+            white-space: pre-wrap;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #selectAllButton {
+            margin-bottom: 10px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: inline-block;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AWS Ubuntu Server Configurator</h1>
+    <h2>Configuration</h2>
+    <div class="input-group">
+        <label for="newusername">New Username:</label>
+        <input type="text" id="newusername" value="jdoe">
+    </div>
+    <div class="input-group">
+        <label for="userpw">User Password:</label>
+        <input type="password" id="userpw" value="mypw">
+    </div>
+    <div class="input-group">
+        <label for="hostname">Hostname:</label>
+        <input type="text" id="hostname" value="localhost">
+    </div>
+    <h2>Function Selector</h2>
+    <p>If this is your first run then be sure to select update_system and set_hostname. </p>
+    <button id="selectAllButton">Select All</button>
+    <div class="function-list" id="functionList"></div>
+    <h2>Linux Shell Script:</h2>
+    <div id="selected-code"></div>
+
+    <script src="functions.js"></script>
+    <script>
+        const functionList = document.getElementById('functionList');
+        const selectedCode = document.getElementById('selected-code');
+        const selectAllButton = document.getElementById('selectAllButton');
+        let allSelected = false;
+
+        // Make configuration variables available to functions.js
+        window.newusername = document.getElementById('newusername').value;
+        window.userpw = document.getElementById('userpw').value;
+        window.hostname = document.getElementById('hostname').value;
+
+        // Update variables when input changes and update selected code
+        document.getElementById('newusername').addEventListener('input', function() {
+            window.newusername = this.value;
+            updateSelectedCode();
+        });
+        document.getElementById('userpw').addEventListener('input', function() {
+            window.userpw = this.value;
+            updateSelectedCode();
+        });
+        document.getElementById('hostname').addEventListener('input', function() {
+            window.hostname = this.value;
+            updateSelectedCode();
+        });
+
+        functions.forEach(func => {
+            if (func.name !== 'print_separator') {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = func.name;
+                checkbox.name = func.name;
+
+                const label = document.createElement('label');
+                label.htmlFor = func.name;
+                label.textContent = func.name;
+
+                const div = document.createElement('div');
+                div.className = 'function-item';
+                div.appendChild(checkbox);
+                div.appendChild(label);
+
+                functionList.appendChild(div);
+
+                checkbox.addEventListener('change', updateSelectedCode);
+            }
+        });
+
+        function updateSelectedCode() {
+            const starttime = `starttime=$(date "+%s")`;
+            const newusername = `newusername='${document.getElementById('newusername').value}'`;
+            const userpw = `userpw='${document.getElementById('userpw').value}'`;
+            const hostname = `hostname='${document.getElementById('hostname').value}'`;
+            
+            const selectedFunctions = functions.filter(func => func.name === 'print_separator' || document.getElementById(func.name).checked);
+            const functionDefinitions = selectedFunctions.map(func => func.code).join('\n\n');
+            const functionCalls = selectedFunctions
+                .filter(func => func.name !== 'print_separator')
+                .map(func => func.name)
+                .join('\n');
+
+            selectedCode.textContent = 
+`#!/bin/bash
+
+${starttime}
+${newusername}
+${userpw}
+${hostname}
+
+${functionDefinitions}
+
+# Call selected functions
+${functionCalls}
+`;
+        }
+
+        selectAllButton.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            allSelected = !allSelected;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = allSelected;
+            });
+            updateSelectedCode();
+            selectAllButton.textContent = allSelected ? 'Deselect All' : 'Select All';
+        });
+    </script>
+</body>
+</html>
